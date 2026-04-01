@@ -27,3 +27,8 @@ def test_run_query_no_truncation_under_limit():
 def test_run_query_raises_on_bad_sql():
     with pytest.raises(Exception):
         run_query("SELECT * FROM nonexistent_table_xyz")
+
+
+def test_run_query_rejects_non_select():
+    with pytest.raises(ValueError, match="Only SELECT queries are allowed"):
+        run_query("DROP TABLE customer")

@@ -9,10 +9,16 @@ _ROW_LIMIT = 50
 def run_query(sql: str) -> list[dict]:
     """Execute a SELECT query and return rows as a list of dicts.
 
-    If the result set exceeds _ROW_LIMIT rows, returns the first _ROW_LIMIT rows
-    followed by {"_truncated": True, "_total": <total_count>}.
+    Fetches all matching rows, then returns the first _ROW_LIMIT rows.
+    If the result exceeds _ROW_LIMIT rows, appends {"_truncated": True, "_total": n}
+    as the last element so the caller knows results were cut off.
+
+    Raises ValueError if sql is not a SELECT statement.
     Raises on SQL errors.
     """
+    if not sql.strip().upper().startswith("SELECT"):
+        raise ValueError(f"Only SELECT queries are allowed, got: {sql[:50]!r}")
+
     with _engine.connect() as conn:
         result = conn.execute(text(sql))
         rows = [dict(row._mapping) for row in result]
