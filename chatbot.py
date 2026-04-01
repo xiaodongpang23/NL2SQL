@@ -1,3 +1,4 @@
+#!/home/xpang/anaconda3/envs/nl2sql/bin/python
 import gradio as gr
 from agent import Agent
 
