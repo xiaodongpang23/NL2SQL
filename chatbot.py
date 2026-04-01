@@ -7,7 +7,7 @@ _agent = Agent()
 def respond(message: str, history: list) -> str:
     """Gradio callback. Ignores `history` — Agent maintains its own full history."""
     answer, sql_used = _agent.chat(message)
-    if sql_used:
+    if sql_used is not None:
         return f"```sql\n{sql_used}\n```\n\n{answer}"
     return answer
 
@@ -25,4 +25,4 @@ demo = gr.ChatInterface(
 )
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(server_name="127.0.0.1", server_port=7860)
