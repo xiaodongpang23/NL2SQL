@@ -121,3 +121,32 @@ def test_chat_sql_error_is_fed_back_to_claude(mock_run_query, mock_cls):
         and m["content"][0].get("type") == "tool_result"
     )
     assert "relation does not exist" in tool_result_msg["content"][0]["content"]
+
+
+@patch("agent.anthropic.Anthropic")
+@patch("agent.run_query")
+def test_chat_returns_after_max_tool_iterations(mock_run_query, mock_cls):
+    from agent import Agent
+
+    mock_client = MagicMock()
+    mock_cls.return_value = mock_client
+    mock_run_query.return_value = [{"count": 1}]
+
+    # Claude requests a tool call 3 times in a row (hitting _MAX_TOOL_ITERATIONS=3),
+    # then on the 4th call it would ask again — but the loop stops at 3 and returns.
+    # We configure exactly 3 tool responses; the loop should exit after the 3rd.
+    mock_client.messages.create.side_effect = [
+        _make_tool_response("t1", "SELECT 1"),
+        _make_tool_response("t2", "SELECT 1"),
+        _make_tool_response("t3", "SELECT 1"),
+    ]
+
+    agent = Agent()
+    answer, sql = agent.chat("Keep querying")
+
+    # Should have called the API exactly 3 times (the loop limit)
+    assert mock_client.messages.create.call_count == 3
+    # Should return the fallback string since no text block was ever returned
+    assert answer == "I was unable to complete this query."
+    # All three SQL calls should be recorded
+    assert sql == "SELECT 1\n\nSELECT 1\n\nSELECT 1"
