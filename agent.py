@@ -49,57 +49,60 @@ class Agent:
 
         sql_used is None if Claude answered without querying the database.
         If multiple queries were run, sql_used contains all of them joined by newlines.
+        Rolls back the user message from history if an API exception is raised,
+        so the conversation state remains valid for subsequent calls.
         """
         self.history.append({"role": "user", "content": user_message})
 
         sql_calls: list[str] = []
 
-        for _ in range(_MAX_TOOL_ITERATIONS):
-            response = self._client.messages.create(
-                model=_MODEL,
-                max_tokens=4096,
-                system=SYSTEM_PROMPT,
-                tools=TOOLS,
-                messages=self.history,
-            )
-
-            if response.stop_reason != "tool_use":
-                # Final answer — extract text and return
-                answer = next(
-                    (block.text for block in response.content if block.type == "text"),
-                    "",
+        try:
+            for _ in range(_MAX_TOOL_ITERATIONS):
+                response = self._client.messages.create(
+                    model=_MODEL,
+                    max_tokens=4096,
+                    system=SYSTEM_PROMPT,
+                    tools=TOOLS,
+                    messages=self.history,
                 )
+
+                if response.stop_reason != "tool_use":
+                    answer = next(
+                        (block.text for block in response.content if block.type == "text"),
+                        "",
+                    )
+                    self.history.append({"role": "assistant", "content": response.content})
+                    sql_used = "\n\n".join(sql_calls) if sql_calls else None
+                    return answer, sql_used
+
                 self.history.append({"role": "assistant", "content": response.content})
-                sql_used = "\n\n".join(sql_calls) if sql_calls else None
-                return answer, sql_used
 
-            # Handle tool call
-            self.history.append({"role": "assistant", "content": response.content})
+                tool_results = []
+                for block in response.content:
+                    if block.type != "tool_use":
+                        continue
+                    sql = block.input["sql"]
+                    sql_calls.append(sql)
+                    try:
+                        rows = run_query(sql)
+                        content = json.dumps(rows, default=str)
+                    except Exception as exc:
+                        content = f"Error: {exc}"
 
-            tool_results = []
-            for block in response.content:
-                if block.type != "tool_use":
-                    continue
-                sql = block.input["sql"]
-                sql_calls.append(sql)
-                try:
-                    rows = run_query(sql)
-                    content = json.dumps(rows, default=str)
-                except Exception as exc:
-                    content = f"Error: {exc}"
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": content,
+                    })
 
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": block.id,
-                    "content": content,
-                })
+                self.history.append({"role": "user", "content": tool_results})
 
-            self.history.append({"role": "user", "content": tool_results})
+        except Exception:
+            # Roll back the user message so history stays valid for future calls
+            if self.history and self.history[-1] == {"role": "user", "content": user_message}:
+                self.history.pop()
+            raise
 
-        # Exceeded max iterations — return whatever text we have
-        last_text = next(
-            (block.text for block in response.content if block.type == "text"),
-            "I was unable to complete this query.",
-        )
+        # Exceeded max iterations
         sql_used = "\n\n".join(sql_calls) if sql_calls else None
-        return last_text, sql_used
+        return "I was unable to complete this query.", sql_used

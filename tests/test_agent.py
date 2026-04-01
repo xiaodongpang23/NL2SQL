@@ -86,11 +86,20 @@ def test_chat_history_accumulates_across_turns(mock_run_query, mock_cls):
     agent.chat("How many loans?")
     agent.chat("What was that total again?")
 
-    # Second API call should include history from the first turn
+    # Second API call (index 2) should include history from the first turn
+    # Turn 1 makes 2 API calls (tool call + answer), so turn 2 is call_args_list[2]
     second_call_messages = mock_client.messages.create.call_args_list[2][1]["messages"]
     roles = [m["role"] for m in second_call_messages]
-    assert roles.count("user") >= 2  # original question + tool result + second question
+    assert roles.count("user") >= 2
     assert roles.count("assistant") >= 1
+    # Verify the tool result from turn 1 is present in the history
+    tool_result_messages = [
+        m for m in second_call_messages
+        if m["role"] == "user"
+        and isinstance(m["content"], list)
+        and any(item.get("type") == "tool_result" for item in m["content"])
+    ]
+    assert len(tool_result_messages) == 1, "Tool result from turn 1 should be in turn 2's history"
 
 
 @patch("agent.anthropic.Anthropic")
