@@ -1,0 +1,151 @@
+,investment_id,customer_id,investment_type,investment_name,purchase_date,purchase_price,quantity
+0,0,75,Bonds,"Anderson, Berger and Ballard",2021-11-14,970,824
+1,1,19,Bonds,"Leon, Martinez and Stevenson",2019-10-03,91,647
+2,2,35,Mutual Funds,"Juarez, Jackson and Hernandez",2021-09-17,308,309
+3,3,67,Stocks,Austin PLC,2022-11-20,623,593
+4,4,55,Bonds,Stevens-Dean,2023-07-09,11,767
+5,5,98,Bonds,Moore PLC,2022-03-23,212,362
+6,6,96,Mutual Funds,"Neal, Anderson and King",2024-02-07,735,905
+7,7,21,Stocks,Hatfield LLC,2023-03-09,762,352
+8,8,9,Mutual Funds,"Fuller, Davila and Evans",2020-03-26,946,633
+9,9,27,Mutual Funds,"Davis, Zuniga and Ruiz",2022-08-14,475,269
+10,10,64,Stocks,Flowers Ltd,2021-05-19,709,253
+11,11,68,Bonds,Olson Inc,2020-06-01,472,767
+12,12,7,Stocks,Sanchez and Sons,2020-08-23,733,185
+13,13,77,Bonds,Elliott-James,2022-08-23,946,936
+14,14,3,Bonds,"Graves, Douglas and Perkins",2023-06-30,547,837
+15,15,89,Mutual Funds,Dominguez and Sons,2023-10-05,205,540
+16,16,93,Mutual Funds,Stevenson-Aguirre,2023-05-07,780,156
+17,17,22,Stocks,Williams-Mckenzie,2022-06-28,676,299
+18,18,15,Bonds,"Cox, Turner and Ochoa",2023-01-01,989,860
+19,19,29,Bonds,"Smith, Fuentes and Martinez",2022-12-17,165,664
+20,20,3,Stocks,"Long, Woodward and Sanchez",2022-11-22,802,667
+21,21,44,Stocks,Miller PLC,2022-06-19,183,347
+22,22,62,Stocks,"Goodman, Garcia and Hamilton",2022-12-29,138,390
+23,23,12,Bonds,Crawford-Hickman,2021-03-18,345,713
+24,24,45,Mutual Funds,Powell Ltd,2024-05-05,448,24
+25,25,94,Bonds,"Brown, Miranda and Smith",2023-10-29,226,609
+26,26,93,Bonds,Lopez Ltd,2023-10-06,595,101
+27,27,87,Bonds,Lewis PLC,2022-06-28,751,811
+28,28,11,Stocks,Palmer Inc,2023-04-04,451,101
+29,29,29,Mutual Funds,Hayes-Palmer,2020-03-23,876,575
+30,30,29,Bonds,Marshall-Leonard,2020-12-14,401,44
+31,31,97,Mutual Funds,Jones Group,2021-11-01,437,995
+32,32,78,Mutual Funds,"Roberts, Robinson and Wright",2020-05-16,101,500
+33,33,92,Bonds,Bush and Sons,2022-06-02,605,392
+34,34,99,Mutual Funds,"Sosa, Allen and Vasquez",2020-11-08,766,669
+35,35,24,Bonds,"Williams, Carroll and Warren",2019-12-10,380,325
+36,36,31,Stocks,"Cohen, Coleman and Williams",2020-03-20,315,167
+37,37,64,Stocks,"Greer, Ruiz and Meyer",2023-02-18,660,433
+38,38,56,Mutual Funds,Brown Ltd,2020-10-19,247,793
+39,39,28,Mutual Funds,"Webster, Mcintyre and Murphy",2024-02-29,776,624
+40,40,1,Bonds,Myers-Fleming,2020-10-13,933,610
+41,41,79,Mutual Funds,"Robinson, Wilson and Bishop",2024-01-22,527,906
+42,42,70,Stocks,"Lopez, Webb and Garrett",2024-06-22,374,662
+43,43,99,Bonds,Frey Inc,2020-02-26,105,931
+44,44,8,Stocks,Adkins Group,2020-12-08,525,941
+45,45,19,Bonds,"Perkins, Blair and Schneider",2022-12-18,320,317
+46,46,5,Stocks,Lloyd-Robinson,2022-08-09,948,977
+47,47,81,Mutual Funds,Cooke PLC,2020-03-18,324,541
+48,48,49,Mutual Funds,Tate Ltd,2020-09-20,237,587
+49,49,12,Stocks,Cowan Ltd,2021-11-14,276,318
+50,50,66,Bonds,Burke Inc,2023-06-14,333,304
+51,51,59,Bonds,Garcia-Taylor,2022-08-08,581,66
+52,52,13,Bonds,"Holt, Walters and Terrell",2023-03-30,774,156
+53,53,22,Bonds,White-Miller,2020-05-20,922,234
+54,54,93,Stocks,"Benitez, Nixon and Baker",2019-12-08,25,642
+55,55,65,Stocks,Hughes-Smith,2024-01-05,385,523
+56,56,82,Mutual Funds,"Paul, Thompson and Barnes",2021-08-30,997,787
+57,57,4,Mutual Funds,Floyd-Smith,2022-01-09,161,755
+58,58,96,Stocks,Baker LLC,2020-11-11,454,226
+59,59,14,Mutual Funds,Meza LLC,2021-05-12,332,275
+60,60,90,Mutual Funds,"Osborne, Jordan and Reed",2024-03-12,305,840
+61,61,59,Mutual Funds,"Richard, Reed and Patterson",2021-10-07,857,579
+62,62,29,Stocks,Cannon Ltd,2023-05-16,733,864
+63,63,32,Mutual Funds,Robinson-Sanchez,2022-11-11,33,94
+64,64,59,Mutual Funds,Lee LLC,2023-08-14,950,709
+65,65,65,Mutual Funds,Richardson-Dennis,2023-08-03,39,788
+66,66,93,Mutual Funds,"Petersen, Goodwin and Miller",2022-05-17,826,740
+67,67,23,Bonds,Davis-Goodwin,2019-08-24,583,13
+68,68,75,Bonds,Bridges-Cruz,2022-12-12,85,841
+69,69,22,Mutual Funds,Sampson-Green,2022-11-15,670,274
+70,70,37,Mutual Funds,Fernandez-Kelly,2022-06-02,616,719
+71,71,92,Stocks,Scott PLC,2024-07-07,564,568
+72,72,49,Bonds,Anderson-Herrera,2024-05-27,335,48
+73,73,16,Mutual Funds,Harper Ltd,2021-08-02,824,560
+74,74,76,Mutual Funds,Dunn and Sons,2023-07-08,10,40
+75,75,85,Bonds,"Wagner, Webb and George",2022-07-29,327,973
+76,76,11,Bonds,"Gregory, Bryant and Gordon",2023-07-26,457,467
+77,77,29,Bonds,Wilson-Singh,2024-06-27,717,601
+78,78,24,Bonds,Fuentes-Hernandez,2020-10-01,299,545
+79,79,60,Bonds,Mccormick Inc,2021-07-18,672,617
+80,80,65,Stocks,"Morales, Jackson and Carlson",2021-03-26,385,892
+81,81,91,Mutual Funds,"Mcdonald, West and Stewart",2020-08-26,375,132
+82,82,62,Mutual Funds,Phillips and Sons,2020-01-16,705,48
+83,83,59,Bonds,"Grant, Tate and Wright",2023-06-13,823,764
+84,84,71,Stocks,Hutchinson Group,2019-08-27,375,213
+85,85,35,Bonds,Mcdonald-Lewis,2023-10-08,23,915
+86,86,26,Bonds,Day Inc,2020-01-18,773,302
+87,87,97,Bonds,Lopez-Hanson,2021-02-05,274,125
+88,88,73,Bonds,Randall PLC,2022-07-07,169,704
+89,89,34,Mutual Funds,Castro-Martinez,2020-01-17,860,965
+90,90,15,Stocks,"Frye, Brown and French",2021-07-26,61,518
+91,91,26,Bonds,"Riley, Lee and Garrett",2021-02-28,800,414
+92,92,43,Stocks,Wilson-Vazquez,2020-09-05,786,923
+93,93,44,Stocks,Webb PLC,2019-12-03,504,350
+94,94,73,Bonds,Daniel and Sons,2021-06-27,49,729
+95,95,11,Stocks,Olsen-Harvey,2022-03-19,337,791
+96,96,20,Stocks,Bass-Carroll,2021-04-12,870,427
+97,97,45,Bonds,Lloyd Ltd,2020-12-28,207,967
+98,98,55,Mutual Funds,Walter LLC,2022-06-08,719,195
+99,99,71,Mutual Funds,"Herrera, Little and Allen",2023-10-31,779,16
+100,100,88,Stocks,Kemp-Mckinney,2023-11-15,381,619
+101,101,73,Mutual Funds,Lane Inc,2021-01-15,598,58
+102,102,36,Mutual Funds,Farley Ltd,2022-10-19,733,209
+103,103,80,Stocks,Fuentes-Davis,2020-04-30,953,54
+104,104,76,Mutual Funds,"Williams, Elliott and Moore",2024-03-24,991,262
+105,105,54,Mutual Funds,Hill Inc,2021-03-30,199,463
+106,106,6,Bonds,Williams Ltd,2022-08-06,12,776
+107,107,23,Bonds,"Mccall, Phillips and Graves",2020-06-29,49,633
+108,108,81,Bonds,"Wilkins, Hall and Jones",2020-04-06,690,462
+109,109,81,Mutual Funds,Sherman Group,2022-10-19,471,751
+110,110,0,Mutual Funds,Glenn-Davis,2022-04-17,262,441
+111,111,42,Bonds,Greer PLC,2019-09-22,360,363
+112,112,87,Bonds,Johnson and Sons,2024-07-08,178,121
+113,113,8,Stocks,Marks-Richardson,2021-11-22,540,306
+114,114,68,Bonds,"Sampson, Morrow and Johnson",2023-07-31,646,656
+115,115,11,Bonds,Walker PLC,2020-09-19,998,829
+116,116,93,Mutual Funds,Molina-Garcia,2021-08-30,996,137
+117,117,86,Mutual Funds,Bradshaw PLC,2019-10-30,871,78
+118,118,84,Stocks,Smith LLC,2019-07-24,813,452
+119,119,51,Stocks,Patel-Johnson,2024-06-01,154,933
+120,120,27,Mutual Funds,"Stein, Mills and Caldwell",2019-10-06,223,64
+121,121,83,Mutual Funds,"Robinson, Mooney and Henderson",2024-02-08,320,481
+122,122,70,Bonds,Bowman-Richards,2021-07-11,257,318
+123,123,82,Stocks,Elliott PLC,2020-07-18,862,765
+124,124,61,Mutual Funds,"Sandoval, Fleming and Stewart",2019-08-10,656,797
+125,125,90,Stocks,"Rodriguez, Sawyer and Smith",2020-05-02,302,74
+126,126,56,Stocks,Smith Group,2020-10-22,387,12
+127,127,22,Mutual Funds,Morales LLC,2022-04-20,453,931
+128,128,57,Mutual Funds,Scott-Johnson,2023-09-07,882,916
+129,129,38,Bonds,English-Perkins,2023-10-27,71,663
+130,130,61,Bonds,"Callahan, Lopez and Middleton",2021-08-20,726,440
+131,131,57,Stocks,Waller-Mathis,2024-02-11,303,322
+132,132,38,Stocks,"Lester, Horn and Burton",2023-09-14,583,196
+133,133,72,Bonds,Walker-Hall,2019-10-04,34,761
+134,134,15,Stocks,Pineda PLC,2020-08-20,239,893
+135,135,38,Stocks,"Trujillo, Roberts and Ross",2023-08-14,931,579
+136,136,2,Mutual Funds,Hernandez-Aguilar,2020-02-10,963,400
+137,137,14,Stocks,Schneider-Walter,2022-09-22,663,370
+138,138,57,Mutual Funds,Mcconnell-Lee,2021-02-05,544,443
+139,139,96,Bonds,Moore-Kim,2023-05-23,496,968
+140,140,2,Stocks,Sims and Sons,2020-12-27,783,612
+141,141,76,Mutual Funds,Chavez and Sons,2019-11-07,919,694
+142,142,66,Stocks,"Ross, Mclean and Lopez",2022-01-02,832,241
+143,143,60,Stocks,Mccoy Group,2023-08-10,334,675
+144,144,43,Stocks,Johnson and Sons,2021-12-16,225,409
+145,145,67,Mutual Funds,Rivera PLC,2021-04-15,705,619
+146,146,59,Stocks,Holland-Smith,2021-11-19,198,680
+147,147,0,Stocks,Davis-Jones,2020-05-11,943,44
+148,148,25,Bonds,Vasquez-Wright,2023-04-01,200,950
+149,149,99,Bonds,Lawrence-Silva,2023-01-26,18,378
