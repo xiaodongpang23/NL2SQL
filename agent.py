@@ -1,7 +1,11 @@
 import json
+import os
 import anthropic
 from pathlib import Path
+from dotenv import load_dotenv
 from db import run_query
+
+load_dotenv()
 
 _DDL = (Path(__file__).parent / "DDL-create-financial-tables.sql").read_text()
 
@@ -35,7 +39,7 @@ TOOLS = [
     }
 ]
 
-_MODEL = "claude-sonnet-4-6"
+_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 _MAX_TOOL_ITERATIONS = 3
 
 
