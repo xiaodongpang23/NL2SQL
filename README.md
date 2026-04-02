@@ -17,6 +17,32 @@ To reset the database from the CSV files:
 python setup_db.py
 ```
 
+## Example Questions
+
+**Simple lookups**
+- How many customers are there?
+- What are the top 5 largest account balances?
+- Show me the 3 oldest customers.
+- List all loan types available.
+
+**Aggregations & analytics**
+- What is the average loan amount by loan type?
+- Which currency has the highest total account balance?
+- How many transactions were made in 2023?
+- What is the total value of all investments by type?
+
+**Joins & relationships**
+- Which customers have both a loan and an investment?
+- Show me customers who have more than one account.
+- Which customers have never made a transaction?
+- List the top 5 customers by total transaction amount.
+
+**Multi-turn (follow-up questions)**
+- How many customers have loans? → *Show me their names and loan amounts.*
+- What are the largest orders? → *Who placed the biggest one?*
+
+---
+
 ## Request → Answer Workflow
 
 ### 1. User types a question in the browser
