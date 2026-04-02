@@ -77,21 +77,22 @@ class Agent:
                     )
                     self.history.append({"role": "assistant", "content": response.content})
                     sql_used = "\n\n".join(sql_calls) if sql_calls else None
-                    return answer, sql_used
+                    return answer, sql_used  # Claude has a final answer
 
+                # Append both sides to history so Claude sees the result of its tool use when deciding what to do next
                 self.history.append({"role": "assistant", "content": response.content})
 
                 tool_results = []
                 for block in response.content:
                     if block.type != "tool_use":
                         continue
-                    sql = block.input["sql"]
+                    sql = block.input["sql"]   # e.g. "SELECT COUNT(*) FROM customer"
                     sql_calls.append(sql)
                     try:
                         rows = run_query(sql)
                         content = json.dumps(rows, default=str)
                     except Exception as exc:
-                        content = f"Error: {exc}"
+                        content = f"Error: {exc}"  # error fed back to Claude to retry
 
                     tool_results.append({
                         "type": "tool_result",
@@ -99,7 +100,9 @@ class Agent:
                         "content": content,
                     })
 
+                # Append both sides to history so Claude sees the result
                 self.history.append({"role": "user", "content": tool_results})
+                # → loop back, call Claude again with the results
 
         except Exception:
             # Roll back the user message so history stays valid for future calls

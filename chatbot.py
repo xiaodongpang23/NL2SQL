@@ -15,7 +15,7 @@ def respond(message: str, history: list) -> str:
 
 demo = gr.ChatInterface(
     fn=respond,
-    title="Financial Database Chatbot",
+    title="Financial Analytics Chatbot",
     description="Ask questions about customers, accounts, loans, investments, orders, and transactions.",
     examples=[
         "How many customers are there?",
