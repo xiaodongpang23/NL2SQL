@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, text
 
-_DB_URL = "postgresql+psycopg2://xpang@/nl2sql?host=/var/run/postgresql&port=5433"
+_DB_URL = "postgresql+psycopg2://xpang@/nl2sql?host=/tmp&port=5432"
 _engine = create_engine(_DB_URL)
 
 _ROW_LIMIT = 50

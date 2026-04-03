@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-DB_URL      = "postgresql+psycopg2://xpang@/nl2sql?host=/var/run/postgresql&port=5433"
+DB_URL      = "postgresql+psycopg2://xpang@/nl2sql?host=/tmp&port=5432"
 PROJECT_DIR = Path(__file__).parent
 DDL_FILE    = PROJECT_DIR / "DDL-create-financial-tables.sql"
 DATA_DIR    = PROJECT_DIR / "financial-data-set"
