@@ -34,9 +34,10 @@ custom_theme = gr.themes.Soft(
     button_primary_text_color="white",
 )
 
-with gr.Blocks() as demo:
+with gr.Blocks(title="Financial Analytics Assistant") as demo:
     gr.ChatInterface(
         fn=respond,
+        chatbot=gr.Chatbot(label="Financial Analytics Assistant"),
         title="Conversational AI-Powered Financial Assistant (NL2SQL)",
         description="""**Architectural Challenge:** Enabling non-technical executives to query complex financial relational databases safely.
 
