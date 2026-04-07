@@ -37,7 +37,7 @@ def _render_sidebar(sessions: list[dict], active_id: str | None) -> str:
             f' data-id="{html_lib.escape(sid, quote=True)}"'
             f' data-name="{html_lib.escape(display, quote=True)}">'
             f'<span class="chat-label">{html_lib.escape(label)}</span>'
-            f'<button class="chat-menu-btn" title="Options">···</button>'
+            f'<button class="chat-menu-btn" title="Options" onclick="nlsqlShowMenu(event,this)">···</button>'
             f'</div>'
         )
     parts.append('</div>')
@@ -101,9 +101,10 @@ body { font-size: 16px !important; }
 .nlsql-menu-item {
     padding: 10px 16px; cursor: pointer; font-size: 13px;
     display: flex; align-items: center; gap: 8px; user-select: none;
+    color: #374151;
 }
 .nlsql-menu-item:hover { background: #f5f7fa; }
-.nlsql-menu-item.danger { color: #dc2626; }
+.nlsql-menu-item.danger { color: #374151; }
 
 /* ── Hidden bridge textbox ── */
 #nlsql-action-input { display: none !important; }
@@ -114,30 +115,36 @@ _JS = """
 (function () {
     'use strict';
 
+    console.log('[nlsql] Script loaded');
     var _menu = null;
 
-    function closeMenu() {
-        if (_menu) { _menu.remove(); _menu = null; }
-    }
-
     // ── Trigger a Python action via the hidden Gradio textbox (.change event) ──
-    function trigger(action) {
+    window.nlsqlTrigger = function(action) {
+        console.log('[nlsql] Trigger called:', action);
         var wrapper = document.getElementById('nlsql-action-input');
+        console.log('[nlsql] wrapper found:', !!wrapper);
         if (!wrapper) return;
         var input = wrapper.querySelector('input, textarea');
+        console.log('[nlsql] input found:', !!input);
         if (!input) return;
-        var setter = Object.getOwnPropertyDescriptor(
-            Object.getPrototypeOf(input), 'value').set;
-        setter.call(input, action);
+        input.value = action;
         input.dispatchEvent(new Event('input',  { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
-    }
+        console.log('[nlsql] Events dispatched');
+    };
 
-    // ── Show context menu ──
-    function showMenu(event, item) {
+    window.nlsqlCloseMenu = function() {
+        if (_menu) { _menu.remove(); _menu = null; }
+    };
+
+    // ── Show context menu — called via inline onclick on the button ──
+    window.nlsqlShowMenu = function(event, btn) {
         event.stopPropagation();
-        closeMenu();
+        event.preventDefault();
+        window.nlsqlCloseMenu();
 
+        var item = btn.closest('.chat-item');
+        if (!item) return;
         var id   = item.dataset.id;
         var name = item.dataset.name;
 
@@ -146,24 +153,24 @@ _JS = """
 
         var r = document.createElement('div');
         r.className = 'nlsql-menu-item';
-        r.innerHTML = '&#9998;&nbsp; Rename';
+        r.textContent = '✏️ Rename';
         r.addEventListener('click', function (e) {
             e.stopPropagation();
-            closeMenu();
+            window.nlsqlCloseMenu();
             var newName = prompt('Rename chat:', name);
             if (newName !== null && newName.trim()) {
-                trigger('rename:' + id + ':' + newName.trim());
+                window.nlsqlTrigger('rename:' + id + ':' + newName.trim());
             }
         });
 
         var d = document.createElement('div');
         d.className = 'nlsql-menu-item danger';
-        d.innerHTML = '&#128465;&nbsp; Delete';
+        d.textContent = '🗑️ Delete';
         d.addEventListener('click', function (e) {
             e.stopPropagation();
-            closeMenu();
+            window.nlsqlCloseMenu();
             if (confirm('Delete this chat? This cannot be undone.')) {
-                trigger('delete:' + id);
+                window.nlsqlTrigger('delete:' + id);
             }
         });
 
@@ -171,21 +178,19 @@ _JS = """
         m.appendChild(d);
 
         // Position below the button
-        var rect = event.currentTarget.getBoundingClientRect();
+        var rect = btn.getBoundingClientRect();
         m.style.top  = (rect.bottom + 4) + 'px';
         m.style.left = Math.min(rect.left, window.innerWidth - 160) + 'px';
         document.body.appendChild(m);
         _menu = m;
-    }
+    };
 
-    // ── Event delegation — capture phase so Gradio's handlers can't block us ──
+    // ── Event delegation for chat label clicks and outside-click menu close ──
     document.addEventListener('click', function (e) {
         // Close menu on any outside click
-        if (_menu && !e.target.closest('.nlsql-context-menu')) closeMenu();
+        if (_menu && !e.target.closest('.nlsql-context-menu')) window.nlsqlCloseMenu();
 
-        var label   = e.target.closest('.chat-label');
-        var menuBtn = e.target.closest('.chat-menu-btn');
-
+        var label = e.target.closest('.chat-label');
         if (label) {
             var item = label.closest('.chat-item');
             if (item) {
@@ -193,21 +198,33 @@ _JS = """
                     el.classList.remove('active');
                 });
                 item.classList.add('active');
-                trigger('select:' + item.dataset.id);
+                window.nlsqlTrigger('select:' + item.dataset.id);
             }
-        } else if (menuBtn) {
-            var item2 = menuBtn.closest('.chat-item');
-            if (item2) showMenu(e, item2);
         }
-    }, true);  // capture phase — runs before Gradio's own handlers
+    }, true);
 })();
 </script>
 """
 
-with gr.Blocks(title="Financial Analytics Assistant") as demo:
-    gr.Markdown("""# Conversational AI-Powered Financial Assistant (NL2SQL)
-**Available tables:** `customer` · `accounts` · `loans` · `investments` · `orders` · `transactions`
-*SELECT-only guard · AI SQL verification · 50-row truncation*""")
+with gr.Blocks(title="Financial Analytics Assistant", head=_CSS.join(["<style>", "</style>"]) + _JS) as demo:
+    gr.HTML("""
+<div style="padding:16px 8px 8px">
+  <h2 style="margin:0 0 4px;font-size:1.4rem;font-weight:700">
+    Conversational AI-Powered Financial Assistant (NL2SQL)
+  </h2>
+  <p style="margin:0 0 12px;color:#555;font-size:0.95rem">
+    Ask questions in plain English and get answers from a live financial database — no SQL knowledge required.
+  </p>
+  <ul style="margin:0;padding-left:20px;font-size:0.88rem;color:#374151;list-style-type:disc">
+    <li style="margin-bottom:6px"><strong style="color:#1d4ed8">🧠 Natural language → SQL:</strong> Claude translates your question into a SQL query and runs it automatically</li>
+    <li style="margin-bottom:6px"><strong style="color:#1d4ed8">✓ AI SQL verification:</strong> A second AI pass checks the query actually answers your question before showing results</li>
+    <li style="margin-bottom:6px"><strong style="color:#1d4ed8">🗄️ 6 financial tables:</strong> <code>customer</code> · <code>accounts</code> · <code>loans</code> · <code>investments</code> · <code>orders</code> · <code>transactions</code></li>
+    <li style="margin-bottom:6px"><strong style="color:#1d4ed8">🔒 SELECT-only guard:</strong> Only read queries are allowed — your data is never modified</li>
+    <li style="margin-bottom:6px"><strong style="color:#1d4ed8">📄 50-row cap:</strong> Results truncated at 50 rows to keep responses fast</li>
+    <li style="margin-bottom:6px"><strong style="color:#1d4ed8">💾 Persistent chat history:</strong> Conversations are saved per user and resumable across sessions</li>
+  </ul>
+</div>
+""")
 
     with gr.Row(equal_height=False):
 
@@ -225,7 +242,7 @@ with gr.Blocks(title="Financial Analytics Assistant") as demo:
             with gr.Row():
                 msg_input = gr.Textbox(
                     placeholder="Ask a question about the financial data…",
-                    show_label=False, scale=4,
+                    show_label=False, scale=4, lines=1,
                 )
                 send_btn = gr.Button("Send", variant="primary", scale=1)
             gr.Examples(
@@ -339,5 +356,4 @@ if __name__ == "__main__":
         auth=authenticate,
         auth_message="Log in to access your Financial Analytics Assistant",
         theme=custom_theme,
-        head=_CSS.join(["<style>", "</style>"]) + _JS,
     )
