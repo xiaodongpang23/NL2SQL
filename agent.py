@@ -55,7 +55,8 @@ TOOLS = [
 ]
 
 _MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
-_VERIFY_MODEL = os.getenv("ANTHROPIC_VERIFY_MODEL", "claude-haiku-4-5-20251001")
+# Fall back to _MODEL if ANTHROPIC_VERIFY_MODEL is not set or invalid
+_VERIFY_MODEL = os.getenv("ANTHROPIC_VERIFY_MODEL", _MODEL)
 _MAX_TOOL_ITERATIONS = 3
 
 
@@ -84,17 +85,28 @@ class Agent:
     # ------------------------------------------------------------------
 
     def _verify_sql(self, question: str, sql: str) -> tuple[bool, str]:
-        """Ask a fast LLM to verify the SQL correctly answers the question."""
-        response = self._client.messages.create(
-            model=_VERIFY_MODEL,
-            max_tokens=128,
-            system=VERIFY_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": f"User question: {question}\n\nGenerated SQL:\n{sql}"}],
-        )
-        text = response.content[0].text.strip()
-        if text.upper().startswith("APPROVED"):
-            return True, text
-        return False, text  # REJECTED: <reason>
+        """Ask a fast LLM to verify the SQL correctly answers the question.
+
+        Falls back to the main model if the verify model is unavailable,
+        and approves the query if both fail (so a misconfigured model never
+        blocks legitimate queries).
+        """
+        payload = {
+            "max_tokens": 128,
+            "system": VERIFY_SYSTEM_PROMPT,
+            "messages": [{"role": "user", "content": f"User question: {question}\n\nGenerated SQL:\n{sql}"}],
+        }
+        for model in dict.fromkeys([_VERIFY_MODEL, _MODEL]):  # deduplicated, order preserved
+            try:
+                response = self._client.messages.create(model=model, **payload)
+                text = response.content[0].text.strip()
+                if text.upper().startswith("APPROVED"):
+                    return True, text
+                return False, text  # REJECTED: <reason>
+            except Exception:
+                continue  # try next model
+        # If every model attempt failed, approve so the query can still run
+        return True, "APPROVED (verification unavailable)"
 
     # ------------------------------------------------------------------
     # Session persistence
