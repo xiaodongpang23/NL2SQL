@@ -184,6 +184,13 @@ class Agent:
         """Persist this session to disk. No-op for anonymous agents (user='')."""
         if not self._session_path:
             return
+        # Preserve a user-set name across saves
+        existing_name = ""
+        if self._session_path.exists():
+            try:
+                existing_name = json.loads(self._session_path.read_text()).get("name", "")
+            except Exception:
+                pass
         preview = next(
             (m["content"] for m in self.history
              if m["role"] == "user" and isinstance(m["content"], str)),
@@ -191,6 +198,7 @@ class Agent:
         )
         data = {
             "id": self.session_id,
+            "name": existing_name,
             "created_at": self._created_at,
             "updated_at": datetime.now().isoformat(),
             "preview": preview[:100],
@@ -222,6 +230,7 @@ class Agent:
                 data = json.loads(f.read_text())
                 sessions.append({
                     "id": data["id"],
+                    "name": data.get("name", ""),
                     "preview": data.get("preview", ""),
                     "updated_at": data.get("updated_at", ""),
                     "created_at": data.get("created_at", ""),
@@ -242,6 +251,23 @@ class Agent:
     def create_project(user: str, project: str) -> None:
         """Create a project directory without starting a session."""
         _conversations_dir(user, project)
+
+    @staticmethod
+    def rename_session(user: str, project: str, session_id: str, new_name: str) -> None:
+        """Update the display name of a session without touching history."""
+        path = Path(__file__).parent / "conversations" / user / project / f"{session_id}.json"
+        if not path.exists():
+            return
+        data = json.loads(path.read_text())
+        data["name"] = new_name.strip()[:100]
+        path.write_text(json.dumps(data, indent=2, default=str))
+
+    @staticmethod
+    def delete_session(user: str, project: str, session_id: str) -> None:
+        """Permanently delete a session file."""
+        path = Path(__file__).parent / "conversations" / user / project / f"{session_id}.json"
+        if path.exists():
+            path.unlink()
 
     # ------------------------------------------------------------------
     # Chat
