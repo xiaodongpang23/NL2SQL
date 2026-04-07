@@ -4,7 +4,6 @@ from auth import authenticate
 from agent import Agent
 
 _agents: dict[str, Agent] = {}  # username → active agent
-
 _PROJECT = "default"
 
 
@@ -14,22 +13,20 @@ def _format_response(answer: str, sql_used: str | None) -> str:
     return answer
 
 
-def _load_or_create(username: str) -> Agent:
-    """Return the user's existing conversation, or start a new one."""
-    sessions = Agent.list_sessions(username, _PROJECT)
-    if sessions:
-        try:
-            return Agent.load(username, _PROJECT, sessions[0]["id"])
-        except Exception:
-            pass
-    return Agent(user=username, project=_PROJECT)
-
-
 def _rebuild_chatbot(agent: Agent) -> list[tuple[str, str]]:
     return [
         (t["user"], _format_response(t["assistant"], t["sql"]))
         for t in agent.get_display_history()
     ]
+
+
+def _session_choices(sessions: list[dict]) -> list[tuple[str, str]]:
+    result = []
+    for s in sessions:
+        preview = s["preview"] or "New conversation"
+        label = preview[:42] + ("…" if len(preview) > 42 else "")
+        result.append((label, s["id"]))
+    return result
 
 
 custom_theme = gr.themes.Soft(
@@ -52,57 +49,116 @@ custom_theme = gr.themes.Soft(
 
 with gr.Blocks(title="Financial Analytics Assistant") as demo:
     gr.Markdown("""# Conversational AI-Powered Financial Assistant (NL2SQL)
+**Available tables:** `customer` · `accounts` · `loans` · `investments` · `orders` · `transactions`
+*SELECT-only guard · AI SQL verification · 50-row truncation*""")
 
-**Architectural Challenge:** Enabling non-technical executives to query complex financial relational databases safely.
+    with gr.Row(equal_height=False):
 
-**Solution:** Reproduced the AWS Bedrock + Redshift pattern locally using Claude API and PostgreSQL. Built a three-layer pipeline: Gradio UI → LLM Tool-Calling Loop → SQL Execution Engine.
+        # ── Left sidebar ─────────────────────────────────────────────────
+        with gr.Column(scale=1, min_width=220, elem_classes=["sidebar-col"]):
+            new_chat_btn = gr.Button("+ New Chat", variant="secondary", size="sm")
+            chat_list = gr.Radio(
+                choices=[],
+                value=None,
+                label="Chat History",
+                interactive=True,
+                elem_classes=["chat-history-list"],
+            )
 
-**Security & Guardrails:** SELECT-only SQL guard, AI verification pass, and 50-row truncation to prevent data exfiltration.
+        # ── Main chat area ────────────────────────────────────────────────
+        with gr.Column(scale=4):
+            chatbot = gr.Chatbot(label="Financial Analytics Assistant", height=500)
+            with gr.Row():
+                msg_input = gr.Textbox(
+                    placeholder="Ask a question about the financial data…",
+                    show_label=False,
+                    scale=4,
+                )
+                send_btn = gr.Button("Send", variant="primary", scale=1)
+            gr.Examples(
+                examples=[
+                    "Give me the name of the customer with the highest number of accounts",
+                    "How many customers are there?",
+                    "What are the top 5 largest account balances?",
+                    "Which customers have both a loan and an investment?",
+                    "Show me the most recent 5 transactions.",
+                ],
+                inputs=msg_input,
+            )
 
-**Available tables:** `customer`, `accounts`, `loans`, `investments`, `orders`, `transactions`""")
-
-    chatbot = gr.Chatbot(label="Financial Analytics Assistant", height=500)
-
-    with gr.Row():
-        msg_input = gr.Textbox(
-            placeholder="Ask a question about the financial data…",
-            show_label=False,
-            scale=4,
-        )
-        send_btn = gr.Button("Send", variant="primary", scale=1)
-
-    gr.Examples(
-        examples=[
-            "Give me the name of the customer with the highest number of accounts",
-            "How many customers are there?",
-            "What are the top 5 largest account balances?",
-            "Which customers have both a loan and an investment?",
-            "Show me the most recent 5 transactions.",
-        ],
-        inputs=msg_input,
-    )
+    # ── Event handlers ────────────────────────────────────────────────────
 
     def on_load(request: gr.Request):
         username = request.username
-        agent = _load_or_create(username)
+        sessions = Agent.list_sessions(username, _PROJECT)
+        if sessions:
+            try:
+                agent = Agent.load(username, _PROJECT, sessions[0]["id"])
+                chatbot_history = _rebuild_chatbot(agent)
+                selected = sessions[0]["id"]
+            except Exception:
+                agent = Agent(user=username, project=_PROJECT)
+                chatbot_history = []
+                selected = None
+        else:
+            agent = Agent(user=username, project=_PROJECT)
+            chatbot_history = []
+            selected = None
         _agents[username] = agent
-        return _rebuild_chatbot(agent)
+        choices = _session_choices(sessions)
+        return gr.update(choices=choices, value=selected), chatbot_history
+
+    def on_new_chat(request: gr.Request):
+        username = request.username
+        _agents[username] = Agent(user=username, project=_PROJECT)
+        return gr.update(value=None), []
+
+    def on_select_session(session_id: str, request: gr.Request):
+        if not session_id:
+            return []
+        username = request.username
+        try:
+            agent = Agent.load(username, _PROJECT, session_id)
+            _agents[username] = agent
+            return _rebuild_chatbot(agent)
+        except Exception:
+            return []
 
     def respond(message: str, chatbot_history: list, request: gr.Request):
         if not message.strip():
-            return "", chatbot_history
+            return "", chatbot_history, gr.update()
         username = request.username
         if username not in _agents:
-            _agents[username] = _load_or_create(username)
+            _agents[username] = Agent(user=username, project=_PROJECT)
         agent = _agents[username]
-        answer, sql_used = agent.chat(message)
+        answer, sql_used = agent.chat(message)  # saves session automatically
         display = _format_response(answer, sql_used)
-        return "", chatbot_history + [(message, display)]
+        sessions = Agent.list_sessions(username, _PROJECT)
+        choices = _session_choices(sessions)
+        return (
+            "",
+            chatbot_history + [(message, display)],
+            gr.update(choices=choices, value=agent.session_id),
+        )
 
-    demo.load(on_load, outputs=[chatbot])
+    # ── Wire events ───────────────────────────────────────────────────────
 
-    send_btn.click(respond, inputs=[msg_input, chatbot], outputs=[msg_input, chatbot])
-    msg_input.submit(respond, inputs=[msg_input, chatbot], outputs=[msg_input, chatbot])
+    demo.load(on_load, outputs=[chat_list, chatbot])
+
+    new_chat_btn.click(on_new_chat, outputs=[chat_list, chatbot])
+
+    chat_list.change(on_select_session, inputs=[chat_list], outputs=[chatbot])
+
+    send_btn.click(
+        respond,
+        inputs=[msg_input, chatbot],
+        outputs=[msg_input, chatbot, chat_list],
+    )
+    msg_input.submit(
+        respond,
+        inputs=[msg_input, chatbot],
+        outputs=[msg_input, chatbot, chat_list],
+    )
 
 
 if __name__ == "__main__":
@@ -116,6 +172,37 @@ if __name__ == "__main__":
         <style>
             body { font-size: 16px !important; }
             .message { font-size: 15px !important; }
+
+            /* ── Sidebar chat history list ── */
+            .chat-history-list input[type="radio"] { display: none !important; }
+            .chat-history-list .wrap {
+                flex-direction: column !important;
+                gap: 2px !important;
+                padding: 4px 0 !important;
+            }
+            .chat-history-list label {
+                padding: 8px 10px !important;
+                border-radius: 6px !important;
+                font-size: 13px !important;
+                line-height: 1.4 !important;
+                width: 100% !important;
+                cursor: pointer;
+                transition: background 0.15s;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .chat-history-list label:hover {
+                background: rgba(0, 0, 0, 0.06) !important;
+            }
+            .chat-history-list label.selected,
+            .chat-history-list input[type="radio"]:checked + span {
+                background: rgba(59, 130, 246, 0.12) !important;
+                font-weight: 500;
+            }
+
+            /* Sidebar scrollable */
+            .sidebar-col { overflow-y: auto; }
         </style>
         """,
     )
