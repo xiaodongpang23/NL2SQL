@@ -105,8 +105,8 @@ body { font-size: 16px !important; }
 .nlsql-menu-item:hover { background: #f5f7fa; }
 .nlsql-menu-item.danger { color: #dc2626; }
 
-/* ── Hidden bridge components ── */
-#nlsql-action-input, #nlsql-action-btn { display: none !important; }
+/* ── Hidden bridge textbox ── */
+#nlsql-action-input { display: none !important; }
 """
 
 _JS = """
@@ -120,22 +120,17 @@ _JS = """
         if (_menu) { _menu.remove(); _menu = null; }
     }
 
-    // ── Trigger a Python action via the hidden Gradio textbox + button ──
+    // ── Trigger a Python action via the hidden Gradio textbox (.change event) ──
     function trigger(action) {
         var wrapper = document.getElementById('nlsql-action-input');
         if (!wrapper) return;
         var input = wrapper.querySelector('input, textarea');
-        if (input) {
-            var setter = Object.getOwnPropertyDescriptor(
-                Object.getPrototypeOf(input), 'value').set;
-            setter.call(input, action);
-            input.dispatchEvent(new Event('input',  { bubbles: true }));
-            input.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-        setTimeout(function () {
-            var btn = document.getElementById('nlsql-action-btn');
-            if (btn) { var b = btn.querySelector('button'); if (b) b.click(); }
-        }, 80);
+        if (!input) return;
+        var setter = Object.getOwnPropertyDescriptor(
+            Object.getPrototypeOf(input), 'value').set;
+        setter.call(input, action);
+        input.dispatchEvent(new Event('input',  { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
     // ── Show context menu ──
@@ -183,7 +178,7 @@ _JS = """
         _menu = m;
     }
 
-    // ── Event delegation — handles dynamically rendered sidebar ──
+    // ── Event delegation — capture phase so Gradio's handlers can't block us ──
     document.addEventListener('click', function (e) {
         // Close menu on any outside click
         if (_menu && !e.target.closest('.nlsql-context-menu')) closeMenu();
@@ -204,7 +199,7 @@ _JS = """
             var item2 = menuBtn.closest('.chat-item');
             if (item2) showMenu(e, item2);
         }
-    });
+    }, true);  // capture phase — runs before Gradio's own handlers
 })();
 </script>
 """
@@ -220,10 +215,9 @@ with gr.Blocks(title="Financial Analytics Assistant") as demo:
         with gr.Column(scale=1, min_width=220):
             new_chat_btn = gr.Button("+ New Chat", variant="secondary", size="sm")
             sidebar_html = gr.HTML(value="")
-            # Hidden bridge: JS writes here, Python reads on button click
+            # Hidden bridge: JS writes here → triggers .change() → Python handles it
             action_input = gr.Textbox(elem_id="nlsql-action-input", visible=True,
                                       show_label=False, max_lines=1)
-            action_btn = gr.Button(elem_id="nlsql-action-btn", visible=True)
 
         # ── Main chat area ────────────────────────────────────────────────
         with gr.Column(scale=4):
@@ -333,7 +327,7 @@ with gr.Blocks(title="Financial Analytics Assistant") as demo:
 
     demo.load(on_load, outputs=[sidebar_html, chatbot])
     new_chat_btn.click(on_new_chat, outputs=[sidebar_html, chatbot])
-    action_btn.click(on_action, inputs=[action_input], outputs=[sidebar_html, chatbot])
+    action_input.change(on_action, inputs=[action_input], outputs=[sidebar_html, chatbot])
     send_btn.click(respond, inputs=[msg_input, chatbot], outputs=[msg_input, chatbot, sidebar_html])
     msg_input.submit(respond, inputs=[msg_input, chatbot], outputs=[msg_input, chatbot, sidebar_html])
 
