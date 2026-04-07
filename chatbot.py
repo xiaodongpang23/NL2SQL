@@ -13,11 +13,12 @@ def _format_response(answer: str, sql_used: str | None) -> str:
     return answer
 
 
-def _rebuild_chatbot(agent: Agent) -> list[tuple[str, str]]:
-    return [
-        (t["user"], _format_response(t["assistant"], t["sql"]))
-        for t in agent.get_display_history()
-    ]
+def _rebuild_chatbot(agent: Agent) -> list[dict]:
+    msgs = []
+    for t in agent.get_display_history():
+        msgs.append({"role": "user", "content": t["user"]})
+        msgs.append({"role": "assistant", "content": _format_response(t["assistant"], t["sql"])})
+    return msgs
 
 
 def _session_choices(sessions: list[dict]) -> list[tuple[str, str]]:
@@ -137,7 +138,7 @@ with gr.Blocks(title="Financial Analytics Assistant") as demo:
         choices = _session_choices(sessions)
         return (
             "",
-            chatbot_history + [(message, display)],
+            chatbot_history + [{"role": "user", "content": message}, {"role": "assistant", "content": display}],
             gr.update(choices=choices, value=agent.session_id),
         )
 
