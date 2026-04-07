@@ -1,6 +1,6 @@
 import json
 import pytest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 
 def _make_text_response(text: str):
@@ -29,6 +29,12 @@ def _make_tool_response(tool_id: str, sql: str):
     return response
 
 
+# ---------------------------------------------------------------------------
+# Existing chat behaviour tests
+# _verify_sql is patched to always approve so these tests are unaffected by
+# the new verification step.
+# ---------------------------------------------------------------------------
+
 @patch("agent.anthropic.Anthropic")
 def test_chat_no_tool_call_returns_answer_and_none_sql(mock_cls):
     from agent import Agent
@@ -45,9 +51,10 @@ def test_chat_no_tool_call_returns_answer_and_none_sql(mock_cls):
     assert sql is None
 
 
+@patch("agent.Agent._verify_sql", return_value=(True, "APPROVED"))
 @patch("agent.anthropic.Anthropic")
 @patch("agent.run_query")
-def test_chat_tool_call_returns_answer_and_sql(mock_run_query, mock_cls):
+def test_chat_tool_call_returns_answer_and_sql(mock_run_query, mock_cls, mock_verify):
     from agent import Agent
 
     mock_client = MagicMock()
@@ -67,9 +74,10 @@ def test_chat_tool_call_returns_answer_and_sql(mock_run_query, mock_cls):
     mock_run_query.assert_called_once_with("SELECT COUNT(*) FROM customer")
 
 
+@patch("agent.Agent._verify_sql", return_value=(True, "APPROVED"))
 @patch("agent.anthropic.Anthropic")
 @patch("agent.run_query")
-def test_chat_history_accumulates_across_turns(mock_run_query, mock_cls):
+def test_chat_history_accumulates_across_turns(mock_run_query, mock_cls, mock_verify):
     from agent import Agent
 
     mock_client = MagicMock()
@@ -102,9 +110,10 @@ def test_chat_history_accumulates_across_turns(mock_run_query, mock_cls):
     assert len(tool_result_messages) == 1, "Tool result from turn 1 should be in turn 2's history"
 
 
+@patch("agent.Agent._verify_sql", return_value=(True, "APPROVED"))
 @patch("agent.anthropic.Anthropic")
 @patch("agent.run_query")
-def test_chat_sql_error_is_fed_back_to_claude(mock_run_query, mock_cls):
+def test_chat_sql_error_is_fed_back_to_claude(mock_run_query, mock_cls, mock_verify):
     from agent import Agent
 
     mock_client = MagicMock()
@@ -132,9 +141,10 @@ def test_chat_sql_error_is_fed_back_to_claude(mock_run_query, mock_cls):
     assert "relation does not exist" in tool_result_msg["content"][0]["content"]
 
 
+@patch("agent.Agent._verify_sql", return_value=(True, "APPROVED"))
 @patch("agent.anthropic.Anthropic")
 @patch("agent.run_query")
-def test_chat_returns_after_max_tool_iterations(mock_run_query, mock_cls):
+def test_chat_returns_after_max_tool_iterations(mock_run_query, mock_cls, mock_verify):
     from agent import Agent
 
     mock_client = MagicMock()
@@ -159,3 +169,121 @@ def test_chat_returns_after_max_tool_iterations(mock_run_query, mock_cls):
     assert answer == "I was unable to complete this query."
     # All three SQL calls should be recorded
     assert sql == "SELECT 1\n\nSELECT 1\n\nSELECT 1"
+
+
+# ---------------------------------------------------------------------------
+# SQL verification tests
+# ---------------------------------------------------------------------------
+
+@patch("agent.anthropic.Anthropic")
+def test_verify_sql_approved(mock_cls):
+    from agent import Agent
+
+    mock_client = MagicMock()
+    mock_cls.return_value = mock_client
+
+    verify_response = MagicMock()
+    verify_response.content = [MagicMock(text="APPROVED")]
+    mock_client.messages.create.return_value = verify_response
+
+    agent = Agent()
+    approved, msg = agent._verify_sql("How many customers?", "SELECT COUNT(*) FROM customer")
+
+    assert approved is True
+    assert "APPROVED" in msg
+
+
+@patch("agent.anthropic.Anthropic")
+def test_verify_sql_rejected(mock_cls):
+    from agent import Agent
+
+    mock_client = MagicMock()
+    mock_cls.return_value = mock_client
+
+    verify_response = MagicMock()
+    verify_response.content = [MagicMock(text="REJECTED: wrong table name used")]
+    mock_client.messages.create.return_value = verify_response
+
+    agent = Agent()
+    approved, msg = agent._verify_sql("How many customers?", "SELECT COUNT(*) FROM customers")
+
+    assert approved is False
+    assert "REJECTED" in msg
+
+
+@patch("agent.Agent._verify_sql", return_value=(False, "REJECTED: wrong table"))
+@patch("agent.anthropic.Anthropic")
+@patch("agent.run_query")
+def test_rejected_sql_fed_back_to_claude(mock_run_query, mock_cls, mock_verify):
+    from agent import Agent
+
+    mock_client = MagicMock()
+    mock_cls.return_value = mock_client
+    mock_run_query.return_value = []
+
+    mock_client.messages.create.side_effect = [
+        _make_tool_response("t1", "SELECT * FROM wrong_table"),
+        _make_text_response("I couldn't do that."),
+    ]
+
+    agent = Agent()
+    answer, sql = agent.chat("Query something")
+
+    # run_query should NOT have been called — verification blocked execution
+    mock_run_query.assert_not_called()
+    # Claude called twice: once for tool use, once after receiving the rejection
+    assert mock_client.messages.create.call_count == 2
+    # The tool result sent back to Claude should describe the verification failure
+    second_call_messages = mock_client.messages.create.call_args_list[1][1]["messages"]
+    tool_result_msg = next(
+        m for m in second_call_messages
+        if m["role"] == "user"
+        and isinstance(m["content"], list)
+        and m["content"][0].get("type") == "tool_result"
+    )
+    assert "SQL verification failed" in tool_result_msg["content"][0]["content"]
+    # No verified SQL was executed, so sql_used should be None
+    assert sql is None
+
+
+# ---------------------------------------------------------------------------
+# Session persistence tests
+# ---------------------------------------------------------------------------
+
+@patch("agent.Agent._verify_sql", return_value=(True, "APPROVED"))
+@patch("agent.anthropic.Anthropic")
+@patch("agent.run_query")
+def test_save_load_roundtrip(mock_run_query, mock_cls, mock_verify, tmp_path, monkeypatch):
+    """Agent serialises history to disk and loads it back faithfully."""
+    import agent as agent_module
+
+    def mock_convdir(user, project):
+        d = tmp_path / "conversations" / user / project
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    monkeypatch.setattr(agent_module, "_conversations_dir", mock_convdir)
+
+    mock_client = MagicMock()
+    mock_cls.return_value = mock_client
+    mock_run_query.return_value = [{"count": 1}]
+
+    mock_client.messages.create.side_effect = [
+        _make_tool_response("t1", "SELECT COUNT(*) FROM customer"),
+        _make_text_response("There is 1 customer."),
+    ]
+
+    a = agent_module.Agent(user="testuser", project="proj")
+    a.chat("How many customers?")
+    session_id = a.session_id
+
+    # Load back — new Agent instance, same session file
+    with patch("agent.anthropic.Anthropic") as mock_cls2:
+        mock_cls2.return_value = MagicMock()
+        b = agent_module.Agent.load("testuser", "proj", session_id)
+
+    turns = b.get_display_history()
+    assert len(turns) == 1
+    assert turns[0]["user"] == "How many customers?"
+    assert "1 customer" in turns[0]["assistant"]
+    assert turns[0]["sql"] == "SELECT COUNT(*) FROM customer"
