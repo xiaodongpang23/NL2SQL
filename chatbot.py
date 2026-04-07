@@ -47,7 +47,7 @@ custom_theme = gr.themes.Soft(
     button_primary_text_color="white",
 )
 
-with gr.Blocks(title="Financial Analytics Assistant", theme=custom_theme) as demo:
+with gr.Blocks(title="Financial Analytics Assistant") as demo:
     gr.Markdown("""# Conversational AI-Powered Financial Assistant (NL2SQL)
 
 **Architectural Challenge:** Enabling non-technical executives to query complex financial relational databases safely.
@@ -283,6 +283,7 @@ if __name__ == "__main__":
         server_port=7860,
         auth=authenticate,
         auth_message="Log in to access your Financial Analytics Assistant",
+        theme=custom_theme,
         head="""
         <style>
             body { font-size: 16px !important; }
